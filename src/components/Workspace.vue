@@ -33,9 +33,9 @@ import type { Ref } from 'vue';
 
 
 const WorkspaceId: Ref<string> = ref('');
-const accessToken = '86b29c9a8fce4ba98b96b1e0af503d48'; // your authorization token generated in sphere engine panel
-const apiUrl = 'http://sea.dev-container.lo:5007/api/v1/' // sphere engine api url
-const SEProjectID = '7fd0976b86ff4e46a41f6079af6fa69e' // project id from sphere engine container panel
+const accessToken = ''; // your authorization token generated in sphere engine panel
+const apiUrl = '' // sphere engine api url
+const SEProjectID = '' // project id from sphere engine container panel
 
 const isCreateButtonDisabled = computed(() => WorkspaceId.value !== '');
 const isRemoveButtonDisabled = computed( () => WorkspaceId.value === '');
