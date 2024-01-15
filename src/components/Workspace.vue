@@ -271,7 +271,6 @@ const stopResize = () => {
 .resize-handle {
   width: 10px;
   height: 10px;
-  background-color: #333;
   position: absolute;
   bottom: 65px;
   right: 0;
