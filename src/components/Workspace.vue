@@ -1,6 +1,7 @@
 <template>
   <div id="ide">
     <div data-id="seco-workspace" v-bind:data-workspace="WorkspaceId"></div>
+    <div id="resize-handle" class="resize-handle"></div>
   </div>
   <div id="menu">
     <h1>Workspace Management</h1>
@@ -45,6 +46,9 @@ onMounted(() => {
   if (savedWorkspaceId) {
     WorkspaceId.value = savedWorkspaceId;
   }
+
+  const resizeHandle = document.getElementById('resize-handle');
+  resizeHandle.addEventListener('mousedown', startResize);
 });
 
 
@@ -169,6 +173,25 @@ const unsubscribe = () => {
   }
 };
 
+
+const startResize = () => {
+  window.addEventListener('mousemove', resize);
+  window.addEventListener('mouseup', stopResize);
+};
+
+
+const resize = (event) => {
+  const ide = document.getElementById('ide');
+  ide.style.width = (event.clientX - ide.getBoundingClientRect().left) + 'px';
+  ide.style.height = (event.clientY - ide.getBoundingClientRect().top) + 'px';
+};
+
+
+const stopResize = () => {
+  window.removeEventListener('mousemove', resize);
+  window.removeEventListener('mouseup', stopResize);
+};
+
 </script>
 
 <style>
@@ -179,6 +202,7 @@ const unsubscribe = () => {
   margin: 0;
   display: flex;
   padding-bottom: 4rem;
+  position: relative;
 }
 
 #menu {
@@ -242,6 +266,16 @@ const unsubscribe = () => {
   padding: 10px;
   margin: 5px;
   width: 250px;
+}
+
+.resize-handle {
+  width: 10px;
+  height: 10px;
+  background-color: #333;
+  position: absolute;
+  bottom: 65px;
+  right: 0;
+  cursor: nwse-resize;
 }
 
 </style>
