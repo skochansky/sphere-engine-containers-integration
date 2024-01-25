@@ -4,6 +4,16 @@
     <div id="resize-handle" class="resize-handle"></div>
   </div>
   <div id="menu">
+    <h1>Access Token</h1>
+    <div class="custom-container">
+      <input type="text" id="accessTokenInput" class="custom-input" placeholder="Your Sphere Engine access token" />
+      <button class="custom-button inline" @click="addAccessToken">Add Access Token</button>
+    </div>
+    <h1>Choose Project</h1>
+    <div class="custom-container">
+      <select id="projectChoice" class="custom-select" v-model="projectId">
+      </select>
+    </div>
     <h1>Workspace Management</h1>
     <button class="custom-button" @click="createWorkspace" v-bind:disabled="isCreateButtonDisabled" v-bind:title="isCreateButtonDisabled ? 'Workspace already exists' : 'Create a new workspace'">Create Workspace</button>
     <button class="custom-button delete" @click="deleteWorkspace" v-bind:disabled="isRemoveButtonDisabled">Remove Workspace</button>
@@ -34,9 +44,9 @@ import type { Ref } from 'vue';
 
 
 const WorkspaceId: Ref<string> = ref('');
-const accessToken = ''; // your authorization token generated in sphere engine panel
-const apiUrl = '' // sphere engine api url
-const SEProjectID = '' // project id from sphere engine container panel
+const accessToken = ref(''); // your authorization token generated in sphere engine panel
+const apiUrl = 'https://containers.sphere-engine.com/api/v1/'
+const projectId = ref(null);
 
 const isCreateButtonDisabled = computed(() => WorkspaceId.value !== '');
 const isRemoveButtonDisabled = computed( () => WorkspaceId.value === '');
@@ -89,13 +99,13 @@ const destroyWorkspace = () => {
   }
 }
 const createWorkspace = () => {
-  let createApiUrl = apiUrl + `workspaces?access_token=${accessToken}` // sphere-engine api url
+  let createApiUrl = apiUrl + `workspaces?access_token=${accessToken.value}`
   const requestOptions = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({'project_id': SEProjectID})
+    body: JSON.stringify({'project_id': projectId.value})
   };
 
   fetch(createApiUrl, requestOptions)
@@ -118,7 +128,7 @@ const createWorkspace = () => {
 const deleteWorkspace = () => {
   let oldWorkspaceId = localStorage.getItem('workspaceId')
   if (oldWorkspaceId != null){
-    const deleteApiUrl = apiUrl + `workspaces/${oldWorkspaceId}/remove?access_token=${accessToken}`
+    const deleteApiUrl = apiUrl + `workspaces/${oldWorkspaceId}/remove?access_token=${accessToken.value}`
     const requestOptions = {
       method: 'PUT'
     };
@@ -190,6 +200,100 @@ const resize = (event) => {
 const stopResize = () => {
   window.removeEventListener('mousemove', resize);
   window.removeEventListener('mouseup', stopResize);
+};
+
+const addAccessToken = () => {
+  const inputElement = document.getElementById('accessTokenInput');
+  if (inputElement) {
+    accessToken.value = inputElement.value;
+
+    testApiEndpoint().then(isValid => {
+      if (isValid) {
+        listProjects();
+      } else {
+        console.log("Invalid response from API");
+      }
+    });
+  }
+};
+
+const listProjects = async () => {
+  let listApiUrl = apiUrl + `projects?access_token=${accessToken.value}`;
+  let allProjects = [];
+  let nextPageToken = null;
+
+  do {
+    const pageTokenParam = nextPageToken ? `&page_token=${nextPageToken}` : '';
+    try {
+      const response = await fetch(`${listApiUrl}${pageTokenParam}`);
+      const data = await response.json();
+
+      if (data && data.items) {
+        allProjects.push(...data.items);
+        nextPageToken = data.paging && data.paging.next_page_token;
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      break;
+    }
+  } while (nextPageToken);
+
+  updateProjectDropdown(allProjects);
+};
+
+const updateProjectDropdown = (items) => {
+  console.log(items.length);
+  const select = document.getElementById('projectChoice');
+  select.innerHTML = '';
+
+
+  items.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = item.name;
+    select.appendChild(option);
+  });
+};
+
+const testApiEndpoint = () => {
+  const testApiUrl = apiUrl + `test?access_token=${accessToken.value}`;
+
+  return fetch(testApiUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Invalid access token');
+        }
+        return response.json();
+      })
+      .then(data => {
+        return !!(data && data.message === "You can use Sphere Engine Containers API");
+      })
+      .catch(error => {
+        console.error(error);
+        if (error.message === 'Invalid access token') {
+          displayToast('Invalid access key', 3000);
+        }
+        return false;
+      });
+};
+
+const displayToast = (message, timeout) => {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.position = 'fixed';
+  toast.style.bottom = '20px';
+  toast.style.left = '20px';
+  toast.style.backgroundColor = 'red';
+  toast.style.color = 'white';
+  toast.style.padding = '10px';
+  toast.style.borderRadius = '5px';
+
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    document.body.removeChild(toast);
+  }, timeout);
 };
 
 </script>
@@ -277,4 +381,13 @@ const stopResize = () => {
   cursor: nwse-resize;
 }
 
+.custom-input {
+  width: 50%;
+  padding: 10px;
+  font-size: 13px;
+}
+
+.custom-select {
+  overflow-y: auto;
+}
 </style>
